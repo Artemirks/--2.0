@@ -55,10 +55,16 @@ function Editor(params) {
         });
     };
 
-    this.btnFunc = function(params) {
-        params.el.addEventListener("click", () => {
-            this.plg[params.name].action();
-        });
+    this.btnFunc = function (params) {
+        if (params.el.classList.contains('notSelectionEditors')) {
+            params.el.addEventListener("click", () => {
+                this.plg[params.name].action();
+            });
+        } else {
+            params.el.addEventListener("click", () => {
+                this.changeEdit({"func": params.name, "isUsingInMulty": params.isUsingInMulty});
+            });
+        }
     }
     this.resizeDivs = function (e) {
         e.preventDefault();
@@ -165,6 +171,20 @@ function Editor(params) {
         this.editonArea.innerHTML = this.newstr;
     };
 
+    this.multyCleaning = function() {
+        this.btnArr.forEach(item => {
+            if (item.classList.contains("usingInMulty")) {
+                this.newstr = this.plg[item.name].action(({
+                    "str": this.newstr || this.str,
+                    "newstr": this.newstr,
+                    "oldstr": this.oldstr,
+                    "selection": this.selection,
+                    "iteration": 0
+                }));
+            }
+        });
+    };
+
     this.include = function (url, callback) {
         let script = document.createElement('script');
         script.type = 'text/javascript';
@@ -193,18 +213,22 @@ function Editor(params) {
                 this[params.func]();
             });
         }
-        /* if (params.name != undefined) {
-            this.btnArr[this.countBtn].addEventListener("click", (e) => {
-                console.log(this.plg.deleteAtributes);
-            });
-        } */
+        if (params.isUsingInMulty) {
+            this.btnArr[this.countBtn].classList.add("usingInMulty");
+        } 
+        if (params.name != undefined) {
+            this.btnArr[this.countBtn].name = params.name;
+        }
         if (params.parent != this.placeForObligButtons) {
             if (params.parent == 'workWithCode') {
                 this.btnArr[this.countBtn].classList.add('editHTML');
             } else {
                 this.btnArr[this.countBtn].classList.add('notSelectionEditors');
             }
-            this.btnFunc({"el": this.btnArr[this.countBtn], "name": params.name});
+            this.btnFunc({
+                "el": this.btnArr[this.countBtn],
+                "name": params.name
+            });
             this.btnArr.forEach((item, i) => {
                 if (item.classList.contains(`${params.parent}`)) {
                     this.indexOfAcc = i;
@@ -216,7 +240,7 @@ function Editor(params) {
                 this.btnArr[this.countBtn].innerHTML = `${params.parentName}`;
                 let newPanel = document.createElement('div');
                 newPanel.classList.add('panel');
-                newPanel.append(this.btnArr[this.countBtn-1]);
+                newPanel.append(this.btnArr[this.countBtn - 1]);
                 this.btnArr[this.countBtn].classList.add(`accordion`, `${params.parent}`);
                 document.querySelector('.wrapperAcc').append(this.btnArr[this.countBtn]);
                 this.btnArr[this.countBtn].insertAdjacentElement("afterEnd", newPanel);
@@ -260,11 +284,35 @@ function Editor(params) {
         "name": "deleteAtributes"
     });
     this.addPlg({
+        "name": "deleteTags"
+    });
+    this.addPlg({
+        "name": "deleteSpans"
+    });
+    this.addPlg({
+        "name": "deleteFonts"
+    });
+    this.addPlg({
+        "name": "deleteComments"
+    });
+    this.addPlg({
+        "name": "deleteExtraSpaces"
+    });
+    this.addPlg({
+        "name": "changeBRtoP"
+    });
+    this.addPlg({
+        "name": "deleteEmptyTags"
+    });
+    this.addPlg({
+        "name": "ListWord"
+    });
+    this.addPlg({
         "name": "makeBold"
     });
     this.addPlg({
         "name": "justCenter"
-    })
+    });
     this.addButtons({
         "id": "selectAll",
         "value": "Выделить все",
@@ -280,18 +328,28 @@ function Editor(params) {
         "value": "Отчистить все",
         "parent": this.placeForObligButtons
     });
+    this.addButtons({
+        "value": "Множественная отчистка",
+        "parent": 'workWithCode',
+        "parentName": "Работа с кодом",
+        "name": "multyCleaning"
+    });
 
-    
-    this.changeEdit = function (func) { //получение изменненой строки и замена старой на нее
+    this.changeEdit = function (params) { //получение изменненой строки и замена старой на нее
         if (typeof this.str != "undefined") {
             if (this.str.length > 0) {
-                this.newstr = window[func](({
-                    "str": this.str,
-                    "newstr": this.newstr,
-                    "oldstr": this.oldstr,
-                    "selection": this.selection,
-                    "iteration": 0
-                }));
+                if (params.func === 'multyCleaning') {
+                    this.multyCleaning();
+                } else {
+                    this.newstr = this.plg[params.func].action(({
+                        "str": this.str,
+                        "newstr": this.newstr,
+                        "oldstr": this.oldstr,
+                        "selection": this.selection,
+                        "iteration": 0,
+                        "parentNode": this
+                    }));
+                }
                 if (this.newstr != false) {
                     let s = this.str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); //преобразование строки для создания из нее регулярного выражения для поиска старой строки во всем тексте
                     let re = new RegExp(s, "g");
@@ -302,7 +360,7 @@ function Editor(params) {
                     }
                     this.oldstr = this.editonArea.innerHTML; //сохранение старой строки для действия "Отменить"
                     this.editonArea.innerHTML = this.editonArea.innerHTML.replace(re, this.newstr); //замена старой строки на новую
-                    this.HTMLArea.value = document.querySelector("#area").innerHTML;
+                    this.HTMLArea.value = this.editonArea.innerHTML;
                     this.oldVal = this.HTMLArea.value;
                     window.getSelection().removeAllRanges(); //обнуление выделения
                     this.newstr = '';
