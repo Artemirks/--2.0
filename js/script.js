@@ -62,7 +62,10 @@ function Editor(params) {
             });
         } else {
             params.el.addEventListener("click", () => {
-                this.changeEdit({"func": params.name, "isUsingInMulty": params.isUsingInMulty});
+                this.changeEdit({
+                    "func": params.name,
+                    "str": this.str
+                });
             });
         }
     }
@@ -151,6 +154,7 @@ function Editor(params) {
                 if (this.newstr == '') {
                     // n = this.editonArea.innerHTML;
                     this.editonArea.innerHTML = this.oldstr;
+                    this.HTMLArea.value = this.oldstr;
                 } else {
                     this.newstr = this.editonArea.innerHTML;
                     if (this.oldstr != undefined) {
@@ -171,7 +175,7 @@ function Editor(params) {
         this.editonArea.innerHTML = this.newstr;
     };
 
-    this.multyCleaning = function() {
+    this.multyCleaning = function () {
         this.btnArr.forEach(item => {
             if (item.classList.contains("usingInMulty")) {
                 this.newstr = this.plg[item.name].action(({
@@ -183,16 +187,51 @@ function Editor(params) {
                 }));
             }
         });
+        this.newstr = this.formatText({
+            "str": this.newstr
+        });
     };
 
-    this.include = function (url, callback) {
-        let script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.src = url;
-        parent = document.getElementsByTagName('head')[0];
+    this.formatHTML = function (params) {
+        this.btnArr.forEach(item => {
+            if (item.name == "deleteEmptyTags") {
+                params.str = this.plg[item.name].action(params);
+            }
+        });
+        let re = /(<\/(p|div)>|<(p|div|ul|ol)>)(\n|)/g;
+        params.str = params.str.replace(re, '\n$1\n');
+        params.str = params.str.replace(/<li>\n/g, '<li>');
+        params.str = params.str.replace(/<\/li>/g, '</li>\n');
+        params.str = params.str.replace(/\n\s+/g, '\n');
+        params.str = params.str.replace(/^\n|\n$/gis, '');
+        this.newstr = params.str
+        return this.newstr;
+    };
+
+    this.formatText = function (params) {
+        let re1 = /([а-яА-Я]+\.)[\W]?([А-Я])/g;
+        let re2 = /["|']([^https|\d]+)["|']/g;
+        let re3 = /(?<=\d+|[XCDMLVI])(?=мил|тыс|млрд|млн|в\.|г|%|руб)|(?<=гл\.|пп\.|рис\.|№|§)(?=\d+|[XCDMLVI])/g;
+        s = params.str.replace(re1, "$1&nbsp;$2"); //создание неразрывного пробела между инициалами
+        s = s.replace(re2, "&laquo;$1&raquo;"); //замена "программистких" кавычек на "елочки"
+        s = s.replace(/\s-\s|-\s|\s-/g, " — "); //замена дефисов на тире
+        s = s.replace(/\([С|C]\)/g, "&#169;"); //замена знака авторства
+        s = s.replace(/(?<!\d)(8|\+?7)[\-|\s]?\(?(\d{3})\)?\s?(\d{3})[\-|\s]?([\d\- ]{2})[\-|\s]?([\d\- ]{2})/g, "$1($2)$3-$4-$5") //преобразование телефонных номеров в шаблон типа 8(555)555-55-55
+        s = s.replace(re3, "&nbsp;"); //отделение числа и соотвествующего ему счетного слова неразрвыным пробелом
+        s = s.replace(/(?<=\d+)(\s+,|,\s+|\s+,)(?=\d+)/g, ","); //правильное написание дробных чисел
+        //s = s.replace(/(?<!^|ГОСТ\s*|№\s*|,\d*|\(|\)|-)(?=(\d{3})+(?!\d|\s*г|&nbsp;г\.))/g, "&thinsp;"); //разделение чисел на разряды
+        s = s.replace(/(?<=2)(&thinsp;)(?=(\d{3}(\n|\s|<|\/)))/g, '');
+        return s;
+    }
+
+    this.include = function (params) {
+        parent = document.getElementsByTagName('head')[0]
+        this.script = document.createElement('script');
+        this.script.type = 'text/javascript';
+        this.script.src = params.url;
+        this.script.onload = () => params.callback(params.name);
         jsScript = parent.querySelector('script');
-        script.onload = () => callback(script);
-        jsScript.insertAdjacentElement('afterend', script);
+        jsScript.insertAdjacentElement('afterend', this.script);
     };
 
     this.addButtons = function (params) {
@@ -215,7 +254,7 @@ function Editor(params) {
         }
         if (params.isUsingInMulty) {
             this.btnArr[this.countBtn].classList.add("usingInMulty");
-        } 
+        }
         if (params.name != undefined) {
             this.btnArr[this.countBtn].name = params.name;
         }
@@ -273,12 +312,29 @@ function Editor(params) {
         this.oldVal = this.HTMLArea.value;
     });
     this.addPlg = function (params) {
-        this.include(`js/${params.name}.js`, () => {
+        if (params.directory) {
+            url = `js/${params.directory}.js`
+        } else {
+            url = `js/${params.name}.js`;
+        }
+        if (document.getElementsByTagName('head')[0].innerHTML.match(url)) {
+            console.log(params.name);
             this.plg[params.name] = new window[params.name]({
                 "name": params.name,
                 "parentNode": this
             });
-        });
+        } else {
+            this.include({
+                "url": url,
+                "callback": (name) => {
+                    this.plg[name] = new window[name]({
+                        "name": name,
+                        "parentNode": this
+                    });
+                },
+                "name": params.name
+            });
+        }
     };
     this.addPlg({
         "name": "deleteAtributes"
@@ -311,7 +367,20 @@ function Editor(params) {
         "name": "makeBold"
     });
     this.addPlg({
-        "name": "justCenter"
+        "name": "justLeft",
+        "directory": "justify"
+    });
+    this.addPlg({
+        "name": "justCenter",
+        "directory": "justify"
+    });
+    this.addPlg({
+        "name": "justRight",
+        "directory": "justify"
+    });
+    this.addPlg({
+        "name": "justFull",
+        "directory": "justify"
     });
     this.addButtons({
         "id": "selectAll",
@@ -338,8 +407,8 @@ function Editor(params) {
     this.changeEdit = function (params) { //получение изменненой строки и замена старой на нее
         if (typeof this.str != "undefined") {
             if (this.str.length > 0) {
-                if (params.func === 'multyCleaning') {
-                    this.multyCleaning();
+                if (params.func === 'multyCleaning' || params.func === 'formatHTML') {
+                    this[params.func](params);
                 } else {
                     this.newstr = this.plg[params.func].action(({
                         "str": this.str,
@@ -351,15 +420,18 @@ function Editor(params) {
                     }));
                 }
                 if (this.newstr != false) {
-                    let s = this.str.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'); //преобразование строки для создания из нее регулярного выражения для поиска старой строки во всем тексте
+                    let s = this.str.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&'); //преобразование строки для создания из нее регулярного выражения для поиска старой строки во всем тексте
                     let re = new RegExp(s, "g");
                     if (this.editonArea.innerHTML.match(re) == null) {
-                        s = this.str.replace(/(<\/p>)/g, "$1\n\n");
-                        s = s.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+                        s = this.str.replace(/(?<=(<\/p>))(?=(<p>))/g, "\n*");
+                        s = s.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
                         re = new RegExp(s, "g");
                     }
                     this.oldstr = this.editonArea.innerHTML; //сохранение старой строки для действия "Отменить"
                     this.editonArea.innerHTML = this.editonArea.innerHTML.replace(re, this.newstr); //замена старой строки на новую
+                    this.editonArea.innerHTML = this.formatHTML({
+                        "str": this.editonArea.innerHTML
+                    });
                     this.HTMLArea.value = this.editonArea.innerHTML;
                     this.oldVal = this.HTMLArea.value;
                     window.getSelection().removeAllRanges(); //обнуление выделения
