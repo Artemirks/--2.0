@@ -8,8 +8,8 @@ function justLeft(params) {
         "name": params.name
     }));
 
-    this.action = function (params) {
-        document.execCommand('justifyLeft', false, null);
+    this.action = function () {
+        document.execCommand('justifyLeft');
     };
 }
 
@@ -23,8 +23,8 @@ function justCenter(params) {
         "name": params.name
     }));
 
-    this.action = function (params) {
-        document.execCommand('justifyCenter', false, null);
+    this.action = function () {
+        document.execCommand('justifyCenter');
     };
 }
 
@@ -38,8 +38,8 @@ function justRight(params) {
         "name": params.name
     }));
 
-    this.action = function (params) {
-        document.execCommand('justifyRight', false, null);
+    this.action = function () {
+        document.execCommand('justifyRight');
     };
 }
 
@@ -53,7 +53,7 @@ function justFull(params) {
         "name": params.name
     }));
 
-    this.action = function (params) {
-        document.execCommand('justifyCenter', false, null);
+    this.action = function () {
+        document.execCommand('justifyCenter');
     };
 }

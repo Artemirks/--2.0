@@ -32,7 +32,6 @@ function Editor(params) {
     this.indexOfAcc = undefined;
     this.previousItem = null;
     this.btnArr = [];
-    this.acc = [];
     this.countBtn = 0;
     this.plg = [];
 
@@ -148,6 +147,45 @@ function Editor(params) {
         return nodes;
     };
 
+    this.changeEdit = function (params) { //получение изменненой строки и замена старой на нее
+        if (typeof this.str != "undefined") {
+            if (this.str.length > 0) {
+                if (params.func === 'multyCleaning' || params.func === 'formatHTML') {
+                    this[params.func](params);
+                } else {
+                    this.newstr = this.plg[params.func].action(({
+                        "str": this.str,
+                        "newstr": this.newstr,
+                        "oldstr": this.oldstr,
+                        "selection": this.selection,
+                        "iteration": 0,
+                        "parentNode": this
+                    }));
+                }
+                if (this.newstr != false) {
+                    let s = this.str.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&'); //преобразование строки для создания из нее регулярного выражения для поиска старой строки во всем тексте
+                    let re = new RegExp(s, "g");
+                    if (this.editonArea.innerHTML.match(re) == null) {
+                        s = this.str.replace(/(?<=(<\/p>))(?=(<p>))/g, "\n*");
+                        s = s.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
+                        re = new RegExp(s, "g");
+                    }
+                    this.oldstr = this.editonArea.innerHTML; //сохранение старой строки для действия "Отменить"
+                    this.editonArea.innerHTML = this.editonArea.innerHTML.replace(re, this.newstr); //замена старой строки на новую
+                    this.editonArea.innerHTML = this.formatHTML({
+                        "str": this.editonArea.innerHTML
+                    });
+                    this.HTMLArea.value = this.editonArea.innerHTML;
+                    this.oldVal = this.HTMLArea.value;
+                    window.getSelection().removeAllRanges(); //обнуление выделения
+                    this.newstr = '';
+                    this.str = '';
+                }
+            }
+        }
+    };
+
+
     this.cancelNew = function () {
         if (this.selection != undefined) {
             if (this.str == '') {
@@ -164,7 +202,7 @@ function Editor(params) {
                 }
             }
         } else {
-            document.execCommand('undo', false, null);
+            document.execCommand('undo');
         }
     };
 
@@ -173,6 +211,28 @@ function Editor(params) {
         this.newstr = '';
         this.HTMLArea.value = this.newstr;
         this.editonArea.innerHTML = this.newstr;
+    };
+
+    this.copyContent = function () {
+        navigator.clipboard.writeText(window.getSelection().toString())
+            .then(() => {
+                console.log("Скопировано");
+            })
+            .catch(err => {
+                console.log('Something went wrong', err);
+            });
+    };
+
+    this.pasteContent = function () {
+       navigator.clipboard.readText()
+            .then(text => {
+                console.log(text);
+                this.editonArea.innerText = text;
+                this.HTMLArea.value = this.editonArea.innerHTML;
+            })
+            .catch(err => {
+                console.log('Something went wrong', err);
+            });
     };
 
     this.multyCleaning = function () {
@@ -213,7 +273,7 @@ function Editor(params) {
         let re2 = /["|']([^https|\d]+)["|']/g;
         let re3 = /(?<=\d+|[XCDMLVI])(?=мил|тыс|млрд|млн|в\.|г|%|руб)|(?<=гл\.|пп\.|рис\.|№|§)(?=\d+|[XCDMLVI])/g;
         s = params.str.replace(re1, "$1&nbsp;$2"); //создание неразрывного пробела между инициалами
-        s = s.replace(re2, "&laquo;$1&raquo;"); //замена "программистких" кавычек на "елочки"
+        //s = s.replace(re2, "&laquo;$1&raquo;"); //замена "программистких" кавычек на "елочки"
         s = s.replace(/\s-\s|-\s|\s-/g, " — "); //замена дефисов на тире
         s = s.replace(/\([С|C]\)/g, "&#169;"); //замена знака авторства
         s = s.replace(/(?<!\d)(8|\+?7)[\-|\s]?\(?(\d{3})\)?\s?(\d{3})[\-|\s]?([\d\- ]{2})[\-|\s]?([\d\- ]{2})/g, "$1($2)$3-$4-$5") //преобразование телефонных номеров в шаблон типа 8(555)555-55-55
@@ -224,15 +284,17 @@ function Editor(params) {
         return s;
     }
 
-    this.include = function (params) {
-        parent = document.getElementsByTagName('head')[0]
-        this.script = document.createElement('script');
-        this.script.type = 'text/javascript';
-        this.script.src = params.url;
-        this.script.onload = () => params.callback(params.name);
+    this.include = function (url, callback) {
+        let script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = url;
+        parent = document.getElementsByTagName('head')[0];
         jsScript = parent.querySelector('script');
-        jsScript.insertAdjacentElement('afterend', this.script);
+        script.onload = () => callback(script);
+        jsScript.insertAdjacentElement('afterend', script);
     };
+
+    
 
     this.addButtons = function (params) {
         this.indexOfAcc = undefined;
@@ -312,27 +374,21 @@ function Editor(params) {
         this.oldVal = this.HTMLArea.value;
     });
     this.addPlg = function (params) {
-        if (params.directory) {
-            url = `js/${params.directory}.js`
-        } else {
-            url = `js/${params.name}.js`;
-        }
-        if (document.getElementsByTagName('head')[0].innerHTML.match(url)) {
-            console.log(params.name);
-            this.plg[params.name] = new window[params.name]({
-                "name": params.name,
-                "parentNode": this
-            });
-        } else {
-            this.include({
-                "url": url,
-                "callback": (name) => {
-                    this.plg[name] = new window[name]({
-                        "name": name,
+        if (params.directory != undefined) {
+            this.include(`js/${params.directory}.js`, () => {
+                params.name.forEach(item => {
+                    this.plg[item] = new window[item]({
+                        "name": item,
                         "parentNode": this
                     });
-                },
-                "name": params.name
+                })
+            });
+        } else {
+            this.include(`js/${params.name}.js`, () => {
+                this.plg[params.name] = new window[params.name]({
+                    "name": params.name,
+                    "parentNode": this
+                });
             });
         }
     };
@@ -364,23 +420,24 @@ function Editor(params) {
         "name": "ListWord"
     });
     this.addPlg({
-        "name": "makeBold"
+        "directory": "fntStyle",
+        "name": ["makeBold", "makeItalic", "makeSubline", "makePereline"]
     });
     this.addPlg({
-        "name": "justLeft",
-        "directory": "justify"
+        "directory": "ownLists",
+        "name": ["makeBulletList", "makeNumberList"]
     });
     this.addPlg({
-        "name": "justCenter",
-        "directory": "justify"
+        "directory": "headings",
+        "name": ["makeH1", "makeH2", "makeH3"]
     });
     this.addPlg({
-        "name": "justRight",
-        "directory": "justify"
-    });
+        "directory": "blocks",
+        "name": ["makeP", "makeBlockquote", "makeDiv"]
+    })
     this.addPlg({
-        "name": "justFull",
-        "directory": "justify"
+        "directory": "justify",
+        "name": ["justLeft", "justCenter", "justRight", "justFull"]
     });
     this.addButtons({
         "id": "selectAll",
@@ -398,47 +455,19 @@ function Editor(params) {
         "parent": this.placeForObligButtons
     });
     this.addButtons({
+        "func": "copyContent",
+        "value": "Копировать",
+        "parent": this.placeForObligButtons
+    });
+    /* this.addButtons({
+        "func": "pasteContent",
+        "value": "Вставить из буфера обмена",
+        "parent": this.placeForObligButtons
+    }); */
+    this.addButtons({
         "value": "Множественная отчистка",
         "parent": 'workWithCode',
         "parentName": "Работа с кодом",
         "name": "multyCleaning"
     });
-
-    this.changeEdit = function (params) { //получение изменненой строки и замена старой на нее
-        if (typeof this.str != "undefined") {
-            if (this.str.length > 0) {
-                if (params.func === 'multyCleaning' || params.func === 'formatHTML') {
-                    this[params.func](params);
-                } else {
-                    this.newstr = this.plg[params.func].action(({
-                        "str": this.str,
-                        "newstr": this.newstr,
-                        "oldstr": this.oldstr,
-                        "selection": this.selection,
-                        "iteration": 0,
-                        "parentNode": this
-                    }));
-                }
-                if (this.newstr != false) {
-                    let s = this.str.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&'); //преобразование строки для создания из нее регулярного выражения для поиска старой строки во всем тексте
-                    let re = new RegExp(s, "g");
-                    if (this.editonArea.innerHTML.match(re) == null) {
-                        s = this.str.replace(/(?<=(<\/p>))(?=(<p>))/g, "\n*");
-                        s = s.replace(/[-\/\\^$+?.()|[\]{}]/g, '\\$&');
-                        re = new RegExp(s, "g");
-                    }
-                    this.oldstr = this.editonArea.innerHTML; //сохранение старой строки для действия "Отменить"
-                    this.editonArea.innerHTML = this.editonArea.innerHTML.replace(re, this.newstr); //замена старой строки на новую
-                    this.editonArea.innerHTML = this.formatHTML({
-                        "str": this.editonArea.innerHTML
-                    });
-                    this.HTMLArea.value = this.editonArea.innerHTML;
-                    this.oldVal = this.HTMLArea.value;
-                    window.getSelection().removeAllRanges(); //обнуление выделения
-                    this.newstr = '';
-                    this.str = '';
-                }
-            }
-        }
-    };
 }
