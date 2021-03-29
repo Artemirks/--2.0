@@ -7,7 +7,7 @@ function makeBold(params) {
         "name": params.name
     }));
 
-    this.action = function () {
+    this.action = function () {;
         document.execCommand('bold');
     };
 }

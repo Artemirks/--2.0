@@ -8,7 +8,7 @@ function makeBulletList(params) {
     }));
 
     this.action = function () {
-        document.execCommand('insertUnorderedList');
+        document.execCommand('insertUnorderedList', false);
     };
 }
 
@@ -22,6 +22,6 @@ function makeNumberList(params) {
     }));
 
     this.action = function () {
-        document.execCommand('insertOrderedList');
+        document.execCommand('insertOrderedList', false);
     };
 }

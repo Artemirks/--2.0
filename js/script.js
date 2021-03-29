@@ -57,7 +57,14 @@ function Editor(params) {
     this.btnFunc = function (params) {
         if (params.el.classList.contains('notSelectionEditors')) {
             params.el.addEventListener("click", () => {
-                this.plg[params.name].action();
+                if (params.el.classList.contains('heading')) {
+                    this.changeEdit({
+                        "func": params.name,
+                        "str": this.str
+                    });
+                } else {
+                    this.plg[params.name].action();
+                }
             });
         } else {
             params.el.addEventListener("click", () => {
@@ -325,6 +332,9 @@ function Editor(params) {
                 this.btnArr[this.countBtn].classList.add('editHTML');
             } else {
                 this.btnArr[this.countBtn].classList.add('notSelectionEditors');
+                if (params.directory == 'headings') {
+                    this.btnArr[this.countBtn].classList.add('heading')
+                }
             }
             this.btnFunc({
                 "el": this.btnArr[this.countBtn],
@@ -378,6 +388,7 @@ function Editor(params) {
             this.include(`js/${params.directory}.js`, () => {
                 params.name.forEach(item => {
                     this.plg[item] = new window[item]({
+                        "directory": params.directory,
                         "name": item,
                         "parentNode": this
                     });
