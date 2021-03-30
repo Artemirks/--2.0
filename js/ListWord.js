@@ -32,9 +32,6 @@ function ListWord(params) {
         params.arr = this.resultArray; //создание массива, состоящего из строк
         this.detectLevel(params); //определения уровня списка
         for (let i = 0; i < this.resultArray.length; i++) {
-             /* this.resultArray[i] = params.parentNode.multyCleaning({
-                "str": resultArray[i]
-            });  */
             this.resultArray[i] = this.resultArray[i].replace(/<[^\/>]*>/is, '');
             if (params.level.length < this.resultArray.length) { //если уровень не определен, то уровень равен одному
                 params.level[i] = params.level[0];

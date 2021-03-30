@@ -9,13 +9,12 @@ function makeH1(params) {
 
     this.action = function (params) {
         s = params.str.replace(/:(?=<|\n|↵|&nbsp;)/g, '');
-        console.log(s);
+        if (s.match(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g) == null) {
+            s = s.replace(/\n(?!<)/g, ' ');
+        }
         s = s.replace(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g, '<h1>$1</h1>');
-        console.log(s);
         s = s.replace(/<b>\n*|<\/b>\n*/g, '');
-        console.log(s);
         return s;
-        //document.execCommand('formatBlock', false, 'h1');
     };
 }
 
@@ -30,10 +29,12 @@ function makeH2(params) {
 
     this.action = function (params) {
         s = params.str.replace(/:(?=<|\n|↵|&nbsp;)/g, '');
+        if (s.match(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g) == null) {
+            s = s.replace(/\n(?!<)/g, ' ');
+        }
         s = s.replace(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g, '<h2>$1</h2>');
         s = s.replace(/<b>\n*|<\/b>\n*/g, '');
         return s;
-        //document.execCommand('formatBlock', false, 'h2');
     };
 }
 
@@ -48,9 +49,11 @@ function makeH3(params) {
 
     this.action = function (params) {
         s = params.str.replace(/:(?=<|\n|↵|&nbsp;)/g, '');
+        if (s.match(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g) == null) {
+            s = s.replace(/\n(?!<)/g, ' ');
+        }
         s = s.replace(/<[^>]+[^>]*>\n*(.+)\n*<[^>]+[^>]*>/g, '<h3>$1</h3>');
         s = s.replace(/<b>\n*|<\/b>\n*/g, '');
         return s;
-        //document.execCommand('formatBlock', false, 'h3');
     };
 }

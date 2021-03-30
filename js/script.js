@@ -230,18 +230,6 @@ function Editor(params) {
             });
     };
 
-    this.pasteContent = function () {
-       navigator.clipboard.readText()
-            .then(text => {
-                console.log(text);
-                this.editonArea.innerText = text;
-                this.HTMLArea.value = this.editonArea.innerHTML;
-            })
-            .catch(err => {
-                console.log('Something went wrong', err);
-            });
-    };
-
     this.multyCleaning = function () {
         this.btnArr.forEach(item => {
             if (item.classList.contains("usingInMulty")) {
@@ -253,6 +241,7 @@ function Editor(params) {
                     "iteration": 0
                 }));
             }
+            console.log(this.newstr);
         });
         this.newstr = this.formatText({
             "str": this.newstr
@@ -300,8 +289,6 @@ function Editor(params) {
         script.onload = () => callback(script);
         jsScript.insertAdjacentElement('afterend', script);
     };
-
-    
 
     this.addButtons = function (params) {
         this.indexOfAcc = undefined;
@@ -470,11 +457,6 @@ function Editor(params) {
         "value": "Копировать",
         "parent": this.placeForObligButtons
     });
-    /* this.addButtons({
-        "func": "pasteContent",
-        "value": "Вставить из буфера обмена",
-        "parent": this.placeForObligButtons
-    }); */
     this.addButtons({
         "value": "Множественная отчистка",
         "parent": 'workWithCode',
