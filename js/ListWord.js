@@ -36,10 +36,10 @@ function ListWord(params) {
             if (params.level.length < this.resultArray.length) { //если уровень не определен, то уровень равен одному
                 params.level[i] = params.level[0];
             }
-            if (this.resultArray[i].match(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|	|∙|•|-|—/is)) {
+            if (this.resultArray[i].match(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|	|∙|•|-|—|✔/is)) {
                 this.resultArray[i] = { //присваивание свойств каждому элементу массива 
-                    marker: this.resultArray[i].match(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|	|∙|•|-|—/is)[0], //маркер
-                    s: this.resultArray[i].replace(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|    |∙|•|-|—/is, ''), //значение
+                    marker: this.resultArray[i].match(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|	|∙|•|-|—|✔/is)[0], //маркер
+                    s: this.resultArray[i].replace(/\d+\.\d+\.\d+|\d+\.\d+|\d+\.|\d+\s+\.|\d\)|\w\.|\w\)|\w\s\.|·|o|§|–|    |∙|•|-|—|✔/is, ''), //значение
                     level: params.level[i].match(/\d+/is)[0] //уровень
                 }
             } else {

@@ -241,11 +241,12 @@ function Editor(params) {
                     "iteration": 0
                 }));
             }
-            console.log(this.newstr);
         });
         this.newstr = this.formatText({
             "str": this.newstr
         });
+        this.newstr = this.newstr.replace(/(?<=(?<!\/)table)(?=>)/g, ' class="table"');
+        console.log(this.newstr);
     };
 
     this.formatHTML = function (params) {
