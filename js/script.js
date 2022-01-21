@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 function Editor(params) {
+
     this.obj = params.obj;
     this.placeForButtons = document.querySelector('.wrapperAcc');
     this.editonArea = document.createElement("div");
@@ -36,6 +37,7 @@ function Editor(params) {
     this.plg = [];
 
     this.widthOfEditor = this.editonArea.offsetWidth + this.HTMLArea.offsetWidth + this.splitter.offsetWidth - 50;
+    console.log(this.editonArea.offsetWidth, this.HTMLArea.offsetWidth, this.splitter.offsetWidth);
 
     this.moveAcc = function (el) {
         el.addEventListener("click", () => {
@@ -104,6 +106,7 @@ function Editor(params) {
                 if (typeof this.selection1 != "undefined") { //для выделить все
                     this.str = this.selection1.getRangeAt(0).commonAncestorContainer.innerHTML;
                     this.selection1 = undefined;
+                    console.log(this.str);
                 } else { //для обычного выделения
                     let arrayNodes = this.getNodesInRange(this.selection);
                     arrayNodes.forEach(item => {
@@ -150,7 +153,6 @@ function Editor(params) {
                 break;
             }
         }
-
         return nodes;
     };
 
@@ -246,7 +248,7 @@ function Editor(params) {
             "str": this.newstr
         });
         this.newstr = this.newstr.replace(/(?<=(?<!\/)table)(?=>)/g, ' class="table"');
-        console.log(this.newstr);
+        this.newstr = this.newstr.replace(/\s*<(colgroup|col)>/g, '');
     };
 
     this.formatHTML = function (params) {
@@ -281,14 +283,22 @@ function Editor(params) {
         return s;
     }
 
-    this.include = function (url, callback) {
-        let script = document.createElement('script');
+    this.include = function (params) {
+        /* let script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = url;
+        script.src = params.url;
         parent = document.getElementsByTagName('head')[0];
         jsScript = parent.querySelector('script');
-        script.onload = () => callback(script);
-        jsScript.insertAdjacentElement('afterend', script);
+        script.onload = () => params.callback;
+        jsScript.insertAdjacentElement('afterend', script); */
+        console.log(params);
+        import(`${params.name}.js`)
+            .then(
+                console.log('!')
+            )
+            .catch(err => {
+                console.log(err);
+            });
     };
 
     this.addButtons = function (params) {
@@ -373,7 +383,8 @@ function Editor(params) {
     });
     this.addPlg = function (params) {
         if (params.directory != undefined) {
-            this.include(`js/${params.directory}.js`, () => {
+            
+            this.include(/* `js/${params.directory}.js`, () => {
                 params.name.forEach(item => {
                     this.plg[item] = new window[item]({
                         "directory": params.directory,
@@ -381,17 +392,36 @@ function Editor(params) {
                         "parentNode": this
                     });
                 })
+            }, */ {
+                "name": params.name,
+                "url":  `js/${params.directory}.js`,
+                "callback":  () => {
+                    params.name.forEach(item => {
+                        this.plg[item] = new window[item]({
+                            "directory": params.directory,
+                            "name": item,
+                            "parentNode": this
+                        });
+                    })
+                }
             });
         } else {
-            this.include(`js/${params.name}.js`, () => {
-                this.plg[params.name] = new window[params.name]({
-                    "name": params.name,
-                    "parentNode": this
-                });
-            });
+            this.include({
+                    "name":     params.name,
+                    "url":  `   js/${params.directory}.js`,
+                    "callback": () => {
+                                    params.name.forEach(item => {
+                                        this.plg[item] = new window[item]({
+                                            "directory": params.directory,
+                                            "name": item,
+                                            "parentNode": this
+                                        });
+                                        })
+                                    }
+                     });
         }
     };
-    this.addPlg({
+   /*  this.addPlg({
         "name": "deleteAtributes"
     });
     this.addPlg({
@@ -399,11 +429,11 @@ function Editor(params) {
     });
     this.addPlg({
         "name": "deleteSpans"
-    });
+    }); */
     this.addPlg({
         "name": "deleteFonts"
     });
-    this.addPlg({
+/*     this.addPlg({
         "name": "deleteComments"
     });
     this.addPlg({
@@ -414,8 +444,8 @@ function Editor(params) {
     });
     this.addPlg({
         "name": "deleteEmptyTags"
-    });
-    this.addPlg({
+    }); */
+    /* this.addPlg({
         "name": "ListWord"
     });
     this.addPlg({
@@ -437,7 +467,7 @@ function Editor(params) {
     this.addPlg({
         "directory": "justify",
         "name": ["justLeft", "justCenter", "justRight", "justFull"]
-    });
+    }); */
     this.addButtons({
         "id": "selectAll",
         "value": "Выделить все",
